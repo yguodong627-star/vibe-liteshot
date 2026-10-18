@@ -1,7 +1,6 @@
 /* 压片 LiteShot · 界面与流程。纯前端，不联网。 */
 (function () {
   'use strict';
-  var FREE_LIMIT = 20;
   var $ = function (s) { return document.querySelector(s); };
 
   /* ---------- 平台预设（note 标注核对状态） ---------- */
@@ -54,7 +53,6 @@
   /* ---------- 状态 ---------- */
   var items = [], seq = 0, logoBlob = null, logoUrl = '';
   var running = false, hasResults = false, selId = null;
-  var pro = false;
 
   function fmt(n) {
     if (n < 1024) return n + ' B';
@@ -66,50 +64,6 @@
     var t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t);
     toast.t = setTimeout(function () { t.hidden = true; }, ms || 3200);
   }
-
-  /* ---------- 授权码（占位：本地校验，不联网，不含任何真实密钥） ----------
-     格式 LS-XXXX-XXXX-XXXX-CCCC，其中 CCCC 是前三组的简单校验和。
-     这只是接口占位，正式上线需替换为签名校验（如公钥验签），此处不代表任何真实授权。 */
-  function checksum(s) {
-    var h = 2166136261;
-    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
-    return ('0000' + h.toString(36).toUpperCase()).slice(-4);
-  }
-  function validateLicense(key) {
-    key = String(key || '').trim().toUpperCase();
-    var m = /^LS-([A-Z0-9]{4})-([A-Z0-9]{4})-([A-Z0-9]{4})-([A-Z0-9]{4})$/.exec(key);
-    if (!m) return false;
-    return checksum(m[1] + '-' + m[2] + '-' + m[3]) === m[4];
-  }
-  function loadPro() {
-    try { pro = validateLicense(localStorage.getItem('liteshot.license')); } catch (e) { pro = false; }
-    renderPro();
-  }
-  function renderPro() {
-    $('#proBtnTxt').textContent = pro ? 'Pro' : '免费版';
-    $('#proBtn').classList.toggle('on', pro);
-    $('#licBox').hidden = pro; $('#licOk').hidden = !pro;
-    $('#presetBox').classList.toggle('locked', !pro);
-    renderMyPresets(); renderList(); updateBar();
-  }
-  function openPro(reason) {
-    $('#proReason').textContent = reason || '免费版已经能完整处理图片，Pro 面向天天上新的店铺。';
-    $('#licMsg').textContent = ''; $('#proModal').hidden = false;
-    setTimeout(function () { (pro ? $('#licOff') : $('#licIn')).focus(); }, 30);
-  }
-  $('#proBtn').onclick = function () { openPro(); };
-  $('#proClose').onclick = function () { $('#proModal').hidden = true; };
-  $('#proModal').addEventListener('click', function (e) { if (e.target === this) this.hidden = true; });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') $('#proModal').hidden = true; });
-  $('#licBtn').onclick = function () {
-    var v = $('#licIn').value;
-    if (validateLicense(v)) {
-      try { localStorage.setItem('liteshot.license', v.trim().toUpperCase()); } catch (e) {}
-      $('#licMsg').textContent = ''; loadPro(); toast('Pro 已解锁'); $('#proModal').hidden = true;
-    } else { $('#licMsg').textContent = '授权码无效，请检查后重试'; $('#licMsg').className = 'msg bad'; }
-  };
-  $('#licOff').onclick = function () { try { localStorage.removeItem('liteshot.license'); } catch (e) {} loadPro(); };
-  $('#buyLink').onclick = function (e) { e.preventDefault(); toast('购买通道尚未开放（占位）'); };
 
   /* ---------- 设置读写 ---------- */
   function readAll() {
@@ -246,19 +200,13 @@
 
   async function addFiles(list) {
     var arr = Array.prototype.slice.call(list).filter(function (f) { return f.file ? isImg(f.file) : isImg(f); });
-    var skipped = 0, over = 0, added = 0;
+    var skipped = 0, added = 0;
     for (var k = 0; k < arr.length; k++) {
       var f = arr[k], rel = '';
       if (f.file) { rel = f.rel; f = f.file; } else rel = f.webkitRelativePath || '';
       if (items.some(function (x) { return x.file.name === f.name && x.file.size === f.size && x.file.lastModified === f.lastModified && x.rel === rel; })) { skipped++; continue; }
-      if (!pro && items.length >= FREE_LIMIT) { over++; continue; }
       var it = { id: ++seq, file: f, name: f.name, rel: rel, size: f.size, w: 0, h: 0, thumb: '', res: null, st: 'ready' };
       items.push(it); added++;
-    }
-    if (over) {
-      $('#limitNote').hidden = false;
-      $('#limitNote').innerHTML = '免费版每次最多 ' + FREE_LIMIT + ' 张，有 ' + over + ' 张没有加入。<a href="#" id="limitPro">解除限制</a>，或处理完一批后清空再来。';
-      var a = $('#limitPro'); a && (a.onclick = function (e) { e.preventDefault(); openPro('免费版每次最多 ' + FREE_LIMIT + ' 张。'); });
     }
     if (skipped) toast('已跳过 ' + skipped + ' 张重复图片');
     if (!arr.length && list.length) toast('没有找到可处理的图片（支持 JPG / PNG / WebP / GIF / BMP）');
@@ -316,13 +264,13 @@
   drop.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); $('#fileIn').click(); } });
   $('#fileIn').onchange = function () { addFiles(this.files); this.value = ''; };
   $('#dirIn').onchange = function () { addFiles(this.files); this.value = ''; };
-  $('#clearBtn').onclick = function () { items = []; selId = null; invalidate(); $('#limitNote').hidden = true; renderList(); updateBar(); schedulePreview(); renamePreview(); };
+  $('#clearBtn').onclick = function () { items = []; selId = null; invalidate(); renderList(); updateBar(); schedulePreview(); renamePreview(); };
 
   /* ---------- 列表渲染 ---------- */
   function renderList() {
     var has = items.length > 0;
     $('#listCard').hidden = !has; $('#emptyHelp').hidden = has; drop.classList.toggle('compact', has);
-    $('#cnt').textContent = has ? items.length + ' 张' + (pro ? '' : ' / ' + FREE_LIMIT) : '';
+    $('#cnt').textContent = has ? items.length + ' 张' : '';
     var names = hasResults ? allNames(true) : null;
     $('#files').innerHTML = items.map(function (it, i) {
       var meta = it.w ? it.w + '×' + it.h + ' · ' + fmt(it.size) : fmt(it.size);
@@ -344,7 +292,7 @@
     if (rm) {
       var id = +rm.dataset.rm; items = items.filter(function (x) { return x.id !== id; });
       if (selId === id) selId = items[0] ? items[0].id : null;
-      invalidate(); $('#limitNote').hidden = true; renderList(); updateBar(); renamePreview(); schedulePreview(); return;
+      invalidate(); renderList(); updateBar(); renamePreview(); schedulePreview(); return;
     }
     var li = e.target.closest('li'); if (li) select(+li.dataset.id);
   });
@@ -434,7 +382,7 @@
   };
   $('#imgOn').addEventListener('change', function () { if (this.checked && !logoBlob) toast('请先选择 Logo 图片'); });
 
-  /* ---------- 我的预设（Pro） ---------- */
+  /* ---------- 我的预设 ---------- */
   function getMy() { try { return JSON.parse(localStorage.getItem('liteshot.presets') || '[]'); } catch (e) { return []; } }
   function setMy(a) { try { localStorage.setItem('liteshot.presets', JSON.stringify(a)); } catch (e) { toast('无法写入本机存储'); } }
   function renderMyPresets() {
@@ -444,7 +392,6 @@
     }).join('') : '<li class="muted">还没有保存的预设</li>';
   }
   $('#savePreset').onclick = function () {
-    if (!pro) return openPro('保存预设是 Pro 功能。');
     var n = $('#presetName').value.trim(); if (!n) return toast('先给预设起个名字');
     var a = getMy().filter(function (p) { return p.name !== n; }); a.push({ name: n, s: readAll() });
     setMy(a); $('#presetName').value = ''; renderMyPresets(); toast('已保存预设“' + n + '”');
@@ -452,21 +399,16 @@
   $('#presetBox').addEventListener('click', function (e) {
     if (e.target.closest('summary')) return;
     var u = e.target.closest('[data-use]'), d = e.target.closest('[data-del]');
-    if (!pro && (u || d)) return openPro('套用已保存的预设是 Pro 功能。');
     var a = getMy();
     if (u) { var p = a[+u.dataset.use]; if (p) { applyAll(p.s); toast('已套用“' + p.name + '”'); } }
     if (d) { a.splice(+d.dataset.del, 1); setMy(a); renderMyPresets(); }
   });
-  $('#presetBox').addEventListener('mousedown', function (e) {
-    if (!pro && !e.target.closest('summary')) { /* 免费版点击区域给出提示 */ }
-  });
-
   /* ---------- 绑定 ---------- */
   document.querySelectorAll('[data-k]').forEach(function (el) {
     if (el.id === 'preset') return;
     el.addEventListener('input', function () { syncDisabled(); labels(); changed(); });
     el.addEventListener('change', function () { syncDisabled(); labels(); changed(); });
   });
-  syncDisabled(); labels(); loadPro(); renamePreview();
-  window.__ls = { pool: pool, validateLicense: validateLicense };
+  syncDisabled(); labels(); renderMyPresets(); renderList(); updateBar(); renamePreview();
+  window.__ls = { pool: pool, items: function () { return items; } };
 })();

@@ -20,7 +20,7 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
       图片不上传
     </span>
-    <button class="pro-btn" id="proBtn" type="button"><span id="proBtnTxt">免费版</span><b>Pro 解锁</b></button>
+    <span class="free-tag"><span>完全免费</span><b>不限张数</b></span>
   </div>
 </header>
 
@@ -50,7 +50,6 @@
         <h2>图片列表 <small id="cnt"></small></h2>
         <button type="button" class="link" id="clearBtn">清空</button>
       </div>
-      <div class="notice" id="limitNote" hidden></div>
       <ul class="files" id="files"></ul>
     </div>
 
@@ -153,7 +152,7 @@
     </details>
 
     <details class="card set" id="presetBox">
-      <summary><h2><i>5</i>我的预设 <span class="tag-pro">Pro</span></h2></summary>
+      <summary><h2><i>5</i>我的预设</h2></summary>
       <div class="body">
         <p class="hint">把当前尺寸 / 压缩 / 水印 / 命名设置存为预设，下次一键套用（保存在本机浏览器）。</p>
         <div class="row-save"><input type="text" id="presetName" placeholder="预设名称，如“淘宝主图”" maxlength="20"><button type="button" class="btn small" id="savePreset">保存</button></div>
@@ -170,30 +169,6 @@
     <div class="acts">
       <button type="button" class="btn primary" id="runBtn" disabled>开始处理</button>
       <button type="button" class="btn dark" id="zipBtn" disabled>下载 ZIP</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal" id="proModal" hidden role="dialog" aria-modal="true" aria-labelledby="proT">
-  <div class="modal-card">
-    <button class="x" type="button" id="proClose" aria-label="关闭">×</button>
-    <h3 id="proT">压片 Pro</h3>
-    <p class="muted" id="proReason">免费版已经能完整处理图片，Pro 面向天天上新的店铺。</p>
-    <table class="cmp">
-      <tr><th></th><th>免费版</th><th>Pro</th></tr>
-      <tr><td>单次处理张数</td><td>最多 20 张</td><td>不限</td></tr>
-      <tr><td>尺寸 / 压缩 / 水印 / 重命名 / ZIP</td><td>全部可用</td><td>全部可用</td></tr>
-      <tr><td>保存常用预设</td><td>—</td><td>可保存、一键套用</td></tr>
-    </table>
-    <div class="lic" id="licBox">
-      <label class="f"><span>已有授权码？</span>
-        <input type="text" id="licIn" placeholder="LS-XXXX-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false"></label>
-      <div class="lic-row"><button type="button" class="btn primary" id="licBtn">验证并解锁</button><span id="licMsg" class="msg"></span></div>
-      <p class="hint">授权码只在本机校验，不联网。<a href="#" id="buyLink">获取 Pro</a>：购买通道尚未开放。</p>
-    </div>
-    <div class="lic" id="licOk" hidden>
-      <p class="ok-line">✓ Pro 已在本机解锁</p>
-      <button type="button" class="btn ghost" id="licOff">移除授权码</button>
     </div>
   </div>
 </div>
