@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>压片 LiteShot · 电商图片批量处理（本地运行，图片不上传）</title>
+<meta name="description" content="电商卖家批量处理商品图：统一尺寸、压缩体积、加水印、批量改名、一键打包 ZIP。纯浏览器本地运行，图片不上传。">
+<meta name="theme-color" content="#1f6f5c">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231f6f5c'/%3E%3Crect x='7' y='8' width='18' height='4' rx='2' fill='%23fff'/%3E%3Crect x='7' y='14' width='13' height='4' rx='2' fill='%23fff' opacity='.8'/%3E%3Crect x='7' y='20' width='8' height='4' rx='2' fill='%23fff' opacity='.6'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#1f6f5c"/><rect x="7" y="8" width="18" height="4" rx="2" fill="#fff"/><rect x="7" y="14" width="13" height="4" rx="2" fill="#fff" opacity=".8"/><rect x="7" y="20" width="8" height="4" rx="2" fill="#fff" opacity=".6"/></svg>
+    <div><h1>压片 <span>LiteShot</span></h1><p class="sub">电商图片批量处理</p></div>
+  </div>
+  <div class="top-r">
+    <span class="privacy" title="所有处理都在你的浏览器内完成，没有任何网络上传">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+      图片不上传
+    </span>
+    <button class="pro-btn" id="proBtn" type="button"><span id="proBtnTxt">免费版</span><b>Pro 解锁</b></button>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="left">
+    <div id="drop" class="drop" tabindex="0" role="button" aria-label="拖入图片或文件夹，或点击选择">
+      <div class="drop-ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-8 9"/></svg></div>
+      <div class="drop-t"><b>把商品图拖到这里</b><span>支持多张图片或整个文件夹 · JPG / PNG / WebP / GIF / BMP</span></div>
+      <div class="drop-btns">
+        <button type="button" class="btn" id="pickFiles">选择图片</button>
+        <button type="button" class="btn ghost" id="pickDir">选择文件夹</button>
+      </div>
+      <input id="fileIn" type="file" accept="image/*" multiple hidden>
+      <input id="dirIn" type="file" webkitdirectory hidden>
+    </div>
+
+    <div class="card" id="previewCard" hidden>
+      <div class="card-h"><h2>效果预览 <small id="pvName"></small></h2><span class="pv-stat" id="pvStat"></span></div>
+      <div class="pv">
+        <figure><div class="pv-box"><img id="pvA" alt="原图"></div><figcaption id="pvAcap">原图</figcaption></figure>
+        <figure><div class="pv-box chk"><img id="pvB" alt="处理后"><div class="pv-busy" id="pvBusy" hidden>处理中…</div></div><figcaption id="pvBcap">处理后</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="card" id="listCard" hidden>
+      <div class="card-h">
+        <h2>图片列表 <small id="cnt"></small></h2>
+        <button type="button" class="link" id="clearBtn">清空</button>
+      </div>
+      <div class="notice" id="limitNote" hidden></div>
+      <ul class="files" id="files"></ul>
+    </div>
+
+    <div class="empty-help" id="emptyHelp">
+      <div><b>1</b><span>拖入图片或文件夹</span></div>
+      <div><b>2</b><span>右侧选平台预设、压缩质量、水印、命名</span></div>
+      <div><b>3</b><span>点“开始处理”，下载 ZIP</span></div>
+    </div>
+  </section>
+
+  <aside class="right" id="settings">
+    <details class="card set" open>
+      <summary><h2><i>1</i>尺寸</h2></summary>
+      <div class="body">
+        <label class="f"><span>平台预设</span>
+          <select id="preset" data-k="preset"></select></label>
+        <p class="hint" id="presetNote"></p>
+        <div class="row2">
+          <label class="f"><span>处理方式</span>
+            <select data-k="mode" id="mode">
+              <option value="none">不改尺寸（仅压缩）</option>
+              <option value="fit">等比缩小，不补白</option>
+              <option value="pad">补白成固定画布</option>
+              <option value="cover">居中裁切铺满</option>
+            </select></label>
+          <div class="f"><span>宽 × 高（px）</span>
+            <div class="wh"><input type="number" min="16" max="10000" data-k="w" id="w" value="1600" inputmode="numeric"><em>×</em><input type="number" min="16" max="10000" data-k="h" id="h" value="1600" inputmode="numeric"></div></div>
+        </div>
+        <div class="row2">
+          <label class="f"><span>补白颜色</span>
+            <span class="colorline"><input type="color" data-k="bg" id="bg" value="#ffffff"><label class="chk-l"><input type="checkbox" data-k="transparent" id="transparent">透明底（PNG）</label></span></label>
+          <label class="chk-l pad-t"><input type="checkbox" data-k="noUpscale" id="noUpscale" checked>小图不放大</label>
+        </div>
+      </div>
+    </details>
+
+    <details class="card set" open>
+      <summary><h2><i>2</i>压缩</h2></summary>
+      <div class="body">
+        <label class="f"><span>输出格式</span>
+          <select data-k="format" id="format">
+            <option value="jpeg">JPG（电商通用，推荐）</option>
+            <option value="webp">WebP（体积更小）</option>
+            <option value="png">PNG（无损，体积大）</option>
+            <option value="keep">保持原格式</option>
+          </select></label>
+        <label class="f"><span>质量 <b id="qv">82</b></span>
+          <input type="range" min="30" max="100" step="1" value="82" data-k="quality" id="quality"></label>
+        <label class="f"><span>单张体积上限 KB<em class="opt">（可选，0 = 不限）</em></span>
+          <input type="number" min="0" max="20000" value="0" data-k="maxKB" id="maxKB" inputmode="numeric"></label>
+        <p class="hint">压缩会自动去掉相机 EXIF（含拍摄地点）。体积上限只对 JPG/WebP 生效，最低压到质量 30。</p>
+      </div>
+    </details>
+
+    <details class="card set">
+      <summary><h2><i>3</i>水印</h2></summary>
+      <div class="body">
+        <label class="chk-l head"><input type="checkbox" data-k="textOn" id="textOn">文字水印</label>
+        <div class="sub-set" id="textSet">
+          <label class="f"><span>内容</span><input type="text" data-k="text" id="wmText" value="@我的小店" maxlength="40"></label>
+          <div class="row2">
+            <label class="f"><span>大小 <b id="tsv">5</b>%</span><input type="range" min="2" max="20" step="0.5" value="5" data-k="textSize" id="textSize"></label>
+            <label class="f"><span>透明度 <b id="tov">60</b>%</span><input type="range" min="10" max="100" value="60" data-k="textOpacity" id="textOpacity"></label>
+          </div>
+          <div class="row2">
+            <label class="f"><span>位置</span><select data-k="textPos" id="textPos"></select></label>
+            <label class="f"><span>颜色</span><span class="colorline"><input type="color" data-k="textColor" id="textColor" value="#ffffff"><label class="chk-l"><input type="checkbox" data-k="tile" id="tile">斜铺满屏</label></span></label>
+          </div>
+        </div>
+        <label class="chk-l head"><input type="checkbox" data-k="imgOn" id="imgOn">图片水印（Logo）</label>
+        <div class="sub-set" id="imgSet">
+          <div class="f"><span>Logo 文件（建议透明 PNG）</span>
+            <div class="logo-row"><button type="button" class="btn small" id="pickLogo">选择图片</button><span id="logoName" class="muted">未选择</span><img id="logoThumb" alt="" hidden></div>
+            <input type="file" id="logoIn" accept="image/*" hidden></div>
+          <div class="row2">
+            <label class="f"><span>宽度占比 <b id="isv">18</b>%</span><input type="range" min="5" max="60" value="18" data-k="imgScale" id="imgScale"></label>
+            <label class="f"><span>透明度 <b id="iov">80</b>%</span><input type="range" min="10" max="100" value="80" data-k="imgOpacity" id="imgOpacity"></label>
+          </div>
+          <label class="f"><span>位置</span><select data-k="imgPos" id="imgPos"></select></label>
+        </div>
+      </div>
+    </details>
+
+    <details class="card set">
+      <summary><h2><i>4</i>重命名</h2></summary>
+      <div class="body">
+        <label class="f"><span>命名模板</span><input type="text" data-k="tpl" id="tpl" value="{name}" spellcheck="false"></label>
+        <div class="chips" id="chips">
+          <button type="button" data-ins="{name}">原文件名</button>
+          <button type="button" data-ins="{n}">序号</button>
+          <button type="button" data-ins="{w}x{h}">尺寸</button>
+          <button type="button" data-ins="{date}">日期</button>
+        </div>
+        <div class="row2">
+          <label class="f"><span>起始序号</span><input type="number" min="0" max="99999" value="1" data-k="start" id="start" inputmode="numeric"></label>
+          <label class="f"><span>序号位数</span><input type="number" min="1" max="6" value="2" data-k="digits" id="digits" inputmode="numeric"></label>
+        </div>
+        <p class="hint" id="renamePv"></p>
+      </div>
+    </details>
+
+    <details class="card set" id="presetBox">
+      <summary><h2><i>5</i>我的预设 <span class="tag-pro">Pro</span></h2></summary>
+      <div class="body">
+        <p class="hint">把当前尺寸 / 压缩 / 水印 / 命名设置存为预设，下次一键套用（保存在本机浏览器）。</p>
+        <div class="row-save"><input type="text" id="presetName" placeholder="预设名称，如“淘宝主图”" maxlength="20"><button type="button" class="btn small" id="savePreset">保存</button></div>
+        <ul class="mypresets" id="myPresets"></ul>
+      </div>
+    </details>
+  </aside>
+</main>
+
+<div class="bar" id="bar">
+  <div class="bar-in">
+    <div class="sum" id="sum">还没有图片</div>
+    <div class="prog" id="prog" hidden><i id="progI"></i></div>
+    <div class="acts">
+      <button type="button" class="btn primary" id="runBtn" disabled>开始处理</button>
+      <button type="button" class="btn dark" id="zipBtn" disabled>下载 ZIP</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="proModal" hidden role="dialog" aria-modal="true" aria-labelledby="proT">
+  <div class="modal-card">
+    <button class="x" type="button" id="proClose" aria-label="关闭">×</button>
+    <h3 id="proT">压片 Pro</h3>
+    <p class="muted" id="proReason">免费版已经能完整处理图片，Pro 面向天天上新的店铺。</p>
+    <table class="cmp">
+      <tr><th></th><th>免费版</th><th>Pro</th></tr>
+      <tr><td>单次处理张数</td><td>最多 20 张</td><td>不限</td></tr>
+      <tr><td>尺寸 / 压缩 / 水印 / 重命名 / ZIP</td><td>全部可用</td><td>全部可用</td></tr>
+      <tr><td>保存常用预设</td><td>—</td><td>可保存、一键套用</td></tr>
+    </table>
+    <div class="lic" id="licBox">
+      <label class="f"><span>已有授权码？</span>
+        <input type="text" id="licIn" placeholder="LS-XXXX-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false"></label>
+      <div class="lic-row"><button type="button" class="btn primary" id="licBtn">验证并解锁</button><span id="licMsg" class="msg"></span></div>
+      <p class="hint">授权码只在本机校验，不联网。<a href="#" id="buyLink">获取 Pro</a>：购买通道尚未开放。</p>
+    </div>
+    <div class="lic" id="licOk" hidden>
+      <p class="ok-line">✓ Pro 已在本机解锁</p>
+      <button type="button" class="btn ghost" id="licOff">移除授权码</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="vendor/jszip.min.js"></script>
+<script src="process.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
